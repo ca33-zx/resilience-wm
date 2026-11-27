@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "name": "San Francisco Real Digital Twin (OSM + AWS 30m DEM)",
+    "bbox": {
+      "south": 37.708,
+      "north": 37.812,
+      "west": -122.516,
+      "east": -122.376
+    },
+    "dem_source": "AWS Mapzen Terrarium 30m DEM (zoom 12)",
+    "infrastructure_source": "OpenStreetMap / PG&E / SF DPH public coordinates"
+  },
+  "features": [
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.39346, 37.78752]}, "properties": {"id": "S_EMB", "name": "Embarcadero Substation", "kind": "substation", "flood_threshold_m": 0.28, "pga_threshold_g": 0.30}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.41386, 37.77738]}, "properties": {"id": "S_MIS", "name": "Mission Substation", "kind": "substation", "flood_threshold_m": 0.30, "pga_threshold_g": 0.32}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.46900, 37.76850]}, "properties": {"id": "S_PAR", "name": "Parnassus Substation", "kind": "substation", "flood_threshold_m": 0.55, "pga_threshold_g": 0.48}},
+
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.40525, 37.75681]}, "properties": {"id": "H_ZSFG", "name": "Zuckerberg SF General", "kind": "hospital", "power_source": "S_MIS", "flood_threshold_m": 0.42, "pga_threshold_g": 0.38}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.38887, 37.76433]}, "properties": {"id": "H_MB", "name": "UCSF Mission Bay", "kind": "hospital", "power_source": "S_EMB", "flood_threshold_m": 0.30, "pga_threshold_g": 0.30}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.42235, 37.78598]}, "properties": {"id": "H_CPMC", "name": "CPMC Van Ness", "kind": "hospital", "power_source": "S_MIS", "flood_threshold_m": 0.48, "pga_threshold_g": 0.42}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.45810, 37.76310]}, "properties": {"id": "H_UCSF", "name": "UCSF Parnassus", "kind": "hospital", "power_source": "S_PAR", "flood_threshold_m": 0.60, "pga_threshold_g": 0.52}},
+
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.40031, 37.78471]}, "properties": {"id": "SH_MOS", "name": "Moscone Shelter", "kind": "shelter", "power_source": "S_EMB", "flood_threshold_m": 0.50}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.41926, 37.77929]}, "properties": {"id": "SH_CIV", "name": "SF City Hall", "kind": "shelter", "power_source": "S_MIS", "flood_threshold_m": 0.55}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.48218, 37.76937]}, "properties": {"id": "SH_GGP", "name": "Golden Gate Park", "kind": "shelter", "power_source": "S_PAR", "flood_threshold_m": 0.65}},
+
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.40600, 37.77120]}, "properties": {"id": "U_101", "name": "US-101/I-80 Skyway", "kind": "underpass", "flood_threshold_m": 0.28, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.40350, 37.74950]}, "properties": {"id": "U_280", "name": "I-280 Islais Underpass", "kind": "underpass", "flood_threshold_m": 0.26, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.39100, 37.78600]}, "properties": {"id": "U_BAY", "name": "Bay Bridge Approach", "kind": "hub", "flood_threshold_m": 0.30, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.43500, 37.76250]}, "properties": {"id": "U_TWN", "name": "Twin Peaks Pass", "kind": "hub", "flood_threshold_m": 0.55, "pga_threshold_g": 0.42}},
+
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.40300, 37.79450]}, "properties": {"id": "R_FIDI", "name": "FiDi & Chinatown", "kind": "residential", "population": 68000, "power_source": "S_EMB"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.39650, 37.77650]}, "properties": {"id": "R_SOMA", "name": "SOMA & Mission Bay", "kind": "residential", "population": 86000, "power_source": "S_EMB"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.41900, 37.75950]}, "properties": {"id": "R_MIS", "name": "Mission District", "kind": "residential", "population": 92000, "power_source": "S_MIS"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.39100, 37.73450]}, "properties": {"id": "R_BAY", "name": "Bayview & Dogpatch", "kind": "residential", "population": 74000, "power_source": "S_EMB"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.42600, 37.72400]}, "properties": {"id": "R_EXC", "name": "Excelsior & Vis Valley", "kind": "residential", "population": 84000, "power_source": "S_MIS"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.43500, 37.80100]}, "properties": {"id": "R_MAR", "name": "Marina & North Beach", "kind": "residential", "population": 64000, "power_source": "S_MIS"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.48200, 37.77900]}, "properties": {"id": "R_RICH", "name": "Richmond District", "kind": "residential", "population": 96000, "power_source": "S_PAR"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.48600, 37.75350]}, "properties": {"id": "R_SUN", "name": "Sunset District", "kind": "residential", "population": 104000, "power_source": "S_PAR"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.43500, 37.75250]}, "properties": {"id": "R_CAS", "name": "Castro & Noe Valley", "kind": "residential", "population": 78000, "power_source": "S_MIS"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.46300, 37.72450]}, "properties": {"id": "R_ING", "name": "Ingleside & Lake Merced", "kind": "residential", "population": 74000, "power_source": "S_PAR"}},
+
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40300, 37.79450], [-122.39346, 37.78752]]}, "properties": {"id": "E_EMB1", "u": "R_FIDI", "v": "S_EMB", "kind": "arterial", "length_km": 2.4, "speed_kmh": 34.0, "flood_block_m": 0.30, "pga_threshold_g": 0.30}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.39346, 37.78752], [-122.39100, 37.78600]]}, "properties": {"id": "E_BAY1", "u": "S_EMB", "v": "U_BAY", "kind": "bridge", "length_km": 1.6, "speed_kmh": 40.0, "flood_block_m": 0.30, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.39100, 37.78600], [-122.39650, 37.77650]]}, "properties": {"id": "E_BAY2", "u": "U_BAY", "v": "R_SOMA", "kind": "bridge", "length_km": 2.2, "speed_kmh": 36.0, "flood_block_m": 0.28, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.39650, 37.77650], [-122.38887, 37.76433]]}, "properties": {"id": "E_MB1", "u": "R_SOMA", "v": "H_MB", "kind": "arterial", "length_km": 2.6, "speed_kmh": 34.0, "flood_block_m": 0.28, "pga_threshold_g": 0.29}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.38887, 37.76433], [-122.39100, 37.73450]]}, "properties": {"id": "E_3RD", "u": "H_MB", "v": "R_BAY", "kind": "bridge", "length_km": 4.2, "speed_kmh": 36.0, "flood_block_m": 0.30, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.39100, 37.73450], [-122.40350, 37.74950]]}, "properties": {"id": "E_ISL1", "u": "R_BAY", "v": "U_280", "kind": "tunnel", "length_km": 2.8, "speed_kmh": 36.0, "flood_block_m": 0.26, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40350, 37.74950], [-122.40525, 37.75681]]}, "properties": {"id": "E_ISL2", "u": "U_280", "v": "H_ZSFG", "kind": "arterial", "length_km": 2.0, "speed_kmh": 34.0, "flood_block_m": 0.28, "pga_threshold_g": 0.30}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40350, 37.74950], [-122.42600, 37.72400]]}, "properties": {"id": "E_101S", "u": "U_280", "v": "R_EXC", "kind": "arterial", "length_km": 3.8, "speed_kmh": 38.0, "flood_block_m": 0.30, "pga_threshold_g": 0.32}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.39650, 37.77650], [-122.40600, 37.77120]]}, "properties": {"id": "E_SKY1", "u": "R_SOMA", "v": "U_101", "kind": "bridge", "length_km": 2.0, "speed_kmh": 36.0, "flood_block_m": 0.28, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40600, 37.77120], [-122.40525, 37.75681]]}, "properties": {"id": "E_SKY2", "u": "U_101", "v": "H_ZSFG", "kind": "arterial", "length_km": 2.4, "speed_kmh": 34.0, "flood_block_m": 0.28, "pga_threshold_g": 0.30}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40600, 37.77120], [-122.41386, 37.77738]]}, "properties": {"id": "E_SKY3", "u": "U_101", "v": "S_MIS", "kind": "arterial", "length_km": 2.0, "speed_kmh": 34.0, "flood_block_m": 0.28, "pga_threshold_g": 0.30}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40031, 37.78471], [-122.39346, 37.78752]]}, "properties": {"id": "E_MOS1", "u": "SH_MOS", "v": "S_EMB", "kind": "arterial", "length_km": 1.6, "speed_kmh": 34.0, "flood_block_m": 0.32, "pga_threshold_g": 0.34}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40031, 37.78471], [-122.41386, 37.77738]]}, "properties": {"id": "E_MOS2", "u": "SH_MOS", "v": "S_MIS", "kind": "arterial", "length_km": 2.2, "speed_kmh": 34.0, "flood_block_m": 0.32, "pga_threshold_g": 0.34}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.40300, 37.79450], [-122.42235, 37.78598]]}, "properties": {"id": "E_VAN1", "u": "R_FIDI", "v": "H_CPMC", "kind": "arterial", "length_km": 2.8, "speed_kmh": 36.0, "flood_block_m": 0.42, "pga_threshold_g": 0.38}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.43500, 37.80100], [-122.42235, 37.78598]]}, "properties": {"id": "E_MAR1", "u": "R_MAR", "v": "H_CPMC", "kind": "arterial", "length_km": 2.8, "speed_kmh": 34.0, "flood_block_m": 0.32, "pga_threshold_g": 0.28}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.42235, 37.78598], [-122.41926, 37.77929]]}, "properties": {"id": "E_CIV1", "u": "H_CPMC", "v": "SH_CIV", "kind": "arterial", "length_km": 1.6, "speed_kmh": 36.0, "flood_block_m": 0.42, "pga_threshold_g": 0.40}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.41926, 37.77929], [-122.41386, 37.77738]]}, "properties": {"id": "E_CIV2", "u": "SH_CIV", "v": "S_MIS", "kind": "arterial", "length_km": 1.4, "speed_kmh": 34.0, "flood_block_m": 0.36, "pga_threshold_g": 0.36}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.41386, 37.77738], [-122.41900, 37.75950]]}, "properties": {"id": "E_MIS1", "u": "S_MIS", "v": "R_MIS", "kind": "arterial", "length_km": 2.6, "speed_kmh": 34.0, "flood_block_m": 0.32, "pga_threshold_g": 0.34}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.41900, 37.75950], [-122.40525, 37.75681]]}, "properties": {"id": "E_MIS2", "u": "R_MIS", "v": "H_ZSFG", "kind": "arterial", "length_km": 2.0, "speed_kmh": 34.0, "flood_block_m": 0.34, "pga_threshold_g": 0.34}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.41900, 37.75950], [-122.42600, 37.72400]]}, "properties": {"id": "E_MIS3", "u": "R_MIS", "v": "R_EXC", "kind": "arterial", "length_km": 4.4, "speed_kmh": 36.0, "flood_block_m": 0.38, "pga_threshold_g": 0.38}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.41900, 37.75950], [-122.43500, 37.75250]]}, "properties": {"id": "E_CAS1", "u": "R_MIS", "v": "R_CAS", "kind": "arterial", "length_km": 2.4, "speed_kmh": 34.0, "flood_block_m": 0.42, "pga_threshold_g": 0.40}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.43500, 37.75250], [-122.43500, 37.76250]]}, "properties": {"id": "E_TWN1", "u": "R_CAS", "v": "U_TWN", "kind": "arterial", "length_km": 1.8, "speed_kmh": 36.0, "flood_block_m": 0.50, "pga_threshold_g": 0.44}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.43500, 37.76250], [-122.45810, 37.76310]]}, "properties": {"id": "E_TWN2", "u": "U_TWN", "v": "H_UCSF", "kind": "tunnel", "length_km": 2.8, "speed_kmh": 38.0, "flood_block_m": 0.50, "pga_threshold_g": 0.44}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.43500, 37.76250], [-122.41926, 37.77929]]}, "properties": {"id": "E_MKT", "u": "U_TWN", "v": "SH_CIV", "kind": "arterial", "length_km": 3.0, "speed_kmh": 36.0, "flood_block_m": 0.44, "pga_threshold_g": 0.42}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.43500, 37.80100], [-122.48200, 37.77900]]}, "properties": {"id": "E_GEA1", "u": "R_MAR", "v": "R_RICH", "kind": "arterial", "length_km": 4.8, "speed_kmh": 38.0, "flood_block_m": 0.45, "pga_threshold_g": 0.42}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.48200, 37.77900], [-122.48218, 37.76937]]}, "properties": {"id": "E_GGP1", "u": "R_RICH", "v": "SH_GGP", "kind": "arterial", "length_km": 1.8, "speed_kmh": 38.0, "flood_block_m": 0.50, "pga_threshold_g": 0.46}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.48218, 37.76937], [-122.45810, 37.76310]]}, "properties": {"id": "E_GGP2", "u": "SH_GGP", "v": "H_UCSF", "kind": "arterial", "length_km": 2.6, "speed_kmh": 38.0, "flood_block_m": 0.52, "pga_threshold_g": 0.48}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.48218, 37.76937], [-122.48600, 37.75350]]}, "properties": {"id": "E_SUN1", "u": "SH_GGP", "v": "R_SUN", "kind": "arterial", "length_km": 2.4, "speed_kmh": 38.0, "flood_block_m": 0.46, "pga_threshold_g": 0.44}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.48600, 37.75350], [-122.45810, 37.76310]]}, "properties": {"id": "E_SUN2", "u": "R_SUN", "v": "H_UCSF", "kind": "arterial", "length_km": 3.2, "speed_kmh": 38.0, "flood_block_m": 0.48, "pga_threshold_g": 0.46}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.48600, 37.75350], [-122.46300, 37.72450]]}, "properties": {"id": "E_19TH", "u": "R_SUN", "v": "R_ING", "kind": "arterial", "length_km": 4.2, "speed_kmh": 40.0, "flood_block_m": 0.46, "pga_threshold_g": 0.44}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.46300, 37.72450], [-122.42600, 37.72400]]}, "properties": {"id": "E_280S", "u": "R_ING", "v": "R_EXC", "kind": "arterial", "length_km": 3.8, "speed_kmh": 40.0, "flood_block_m": 0.44, "pga_threshold_g": 0.42}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.46300, 37.72450], [-122.43500, 37.75250]]}, "properties": {"id": "E_POR", "u": "R_ING", "v": "R_CAS", "kind": "arterial", "length_km": 4.2, "speed_kmh": 38.0, "flood_block_m": 0.48, "pga_threshold_g": 0.44}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-122.45860, 37.76310], [-122.45810, 37.76310]]}, "properties": {"id": "E_PAR", "u": "S_PAR", "v": "H_UCSF", "kind": "arterial", "length_km": 0.8, "speed_kmh": 40.0, "flood_block_m": 0.55, "pga_threshold_g": 0.50}}
+  ]
+}

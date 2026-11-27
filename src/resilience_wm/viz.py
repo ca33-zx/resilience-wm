@@ -197,9 +197,11 @@ def _draw_city_panel(
             )
             draw.line([(x - 5, y), (x + 5, y)], fill=(255, 255, 255, 255), width=2)
             draw.line([(x, y - 5), (x, y + 5)], fill=(255, 255, 255, 255), width=2)
+            hlbl = f"{nid}({int(cap * 100)}%)"
+            hx = x - len(hlbl) * 7 - 12 if x > panel_w - 95 else x + 12
             draw.text(
-                (x + 12, y - 7),
-                f"{nid}({int(cap * 100)}%)",
+                (hx, y - 7),
+                hlbl,
                 fill=(240, 253, 244, 255),
                 font=tag_font,
             )
@@ -212,9 +214,11 @@ def _draw_city_panel(
                 fill=bg,
                 outline=(15, 23, 42, 255),
             )
+            slbl = f"{nid}{'' if ok else '[OFF]'}"
+            sx_lbl = x - len(slbl) * 7 - 12 if x > panel_w - 95 else x + 12
             draw.text(
-                (x + 12, y - 7),
-                f"{nid}{'' if ok else '[OFF]'}",
+                (sx_lbl, y - 7),
+                slbl,
                 fill=(254, 240, 138, 255) if ok else (254, 202, 202, 255),
                 font=tag_font,
             )
@@ -376,16 +380,49 @@ def render_comparison_frame(
         hr_lbl = f"{int(comparison.baseline.metrics[i].hour)}h"
         draw.text((tx - 8, py2 + 8), hr_lbl, fill=(148, 163, 184), font=small)
 
-    # Shaded green resilience gain polygon between baseline and optimal curves
+    # Shaded green resilience gain polygon + optional Monte Carlo 90% CI bands
     if len(b_pts) >= 2:
         poly_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         pdraw = ImageDraw.Draw(poly_overlay)
-        pdraw.polygon(o_pts + list(reversed(b_pts)), fill=(16, 185, 129, 65))
+        pdraw.polygon(o_pts + list(reversed(b_pts)), fill=(16, 185, 129, 55))
+
+        # Draw translucent 90% Monte Carlo confidence bands [P05, P95] when available
+        if comparison.baseline_mc is not None and len(comparison.baseline_mc.p05_r) == n_pts:
+            b_hi = [
+                (b_pts[i][0], int(py2 - comparison.baseline_mc.p95_r[i] * (py2 - py1)))
+                for i in range(n_pts)
+            ]
+            b_lo = [
+                (b_pts[i][0], int(py2 - comparison.baseline_mc.p05_r[i] * (py2 - py1)))
+                for i in range(n_pts)
+            ]
+            pdraw.polygon(b_hi + list(reversed(b_lo)), fill=(239, 68, 68, 48))
+
+        if comparison.optimal_mc is not None and len(comparison.optimal_mc.p05_r) == n_pts:
+            o_hi = [
+                (o_pts[i][0], int(py2 - comparison.optimal_mc.p95_r[i] * (py2 - py1)))
+                for i in range(n_pts)
+            ]
+            o_lo = [
+                (o_pts[i][0], int(py2 - comparison.optimal_mc.p05_r[i] * (py2 - py1)))
+                for i in range(n_pts)
+            ]
+            pdraw.polygon(o_hi + list(reversed(o_lo)), fill=(52, 211, 153, 58))
+
         canvas = Image.alpha_composite(canvas.convert("RGBA"), poly_overlay).convert("RGB")
         draw = ImageDraw.Draw(canvas)
 
         draw.line(b_pts, fill=(239, 68, 68), width=3)
         draw.line(o_pts, fill=(16, 185, 129), width=3)
+
+        if comparison.baseline_mc is not None and comparison.optimal_mc is not None:
+            draw.text(
+                (px1 + 8, py2 - 20),
+                f"Monte Carlo (N={comparison.optimal_mc.n_samples}) 90% CI  |  "
+                f"CVaR-10%: {comparison.baseline_mc.cvar10_mean_r:.2f} -> {comparison.optimal_mc.cvar10_mean_r:.2f}",
+                fill=(203, 213, 225),
+                font=small,
+            )
 
     # Current-time vertical cursor
     cx = b_pts[frame_idx][0]
@@ -843,4 +880,182 @@ render();
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html_doc, encoding="utf-8")
+    return out
+
+
+def render_multimodal_pipeline_banner(
+    city: UrbanTwin,
+    comparison: PlanComparison,
+    satellite_image_path: str | Path,
+    output_path: str | Path,
+) -> Path:
+    """Render a 3-stage closed-loop banner: Real Satellite + vlm-zoom -> Spatial Grounding -> World Model."""
+    W, H = 1600, 680
+    canvas = Image.new("RGB", (W, H), (11, 17, 32))
+    draw = ImageDraw.Draw(canvas)
+    h1 = _load_font(25)
+    sub = _load_font(15)
+    mono = _load_font(14, mono=True)
+    small = _load_font(12, mono=True)
+
+    draw.text(
+        (24, 16),
+        "End-to-End Closed Loop: Real Satellite Imagery (vlm-zoom) -> Spatial Grounding -> World-Model Planning",
+        fill=(241, 245, 249),
+        font=h1,
+    )
+    draw.text(
+        (24, 48),
+        f"{city.name}  |  LISFLOOD-FP 2D Shallow-Water Solver  |  "
+        f"Mean R(t): {comparison.baseline.mean_resilience:.2f} -> {comparison.optimal.mean_resilience:.2f} "
+        f"({comparison.resilience_gain:+.2f})  |  "
+        f"Rescued: {comparison.isolated_population_reduced:,} residents",
+        fill=(148, 163, 184),
+        font=sub,
+    )
+
+    # Three side-by-side cards
+    top_y = 92
+    card_h = 560
+    p1_w, p2_w, p3_w = 480, 510, 510
+    x1 = 24
+    x2 = x1 + p1_w + 26
+    x3 = x2 + p2_w + 26
+
+    # Stage headers
+    headers = [
+        (x1, p1_w, (30, 64, 175), "1. REAL SATELLITE + vlm-zoom DETECTIONS"),
+        (x2, p2_w, (153, 27, 27), "2. BASELINE CASCADING COLLAPSE (t=3h)"),
+        (x3, p3_w, (6, 95, 70), "3. WORLD-MODEL OPTIMAL PLAN (t=3h)"),
+    ]
+    for hx, hw, bg, txt in headers:
+        draw.rectangle((hx, top_y, hx + hw, top_y + 30), fill=bg)
+        draw.text((hx + 10, top_y + 7), txt, fill=(248, 250, 252), font=small)
+
+    # Panel 1: Real Satellite Orthophoto with [0, 1000] VLM detection boxes + 2 zoomed insets
+    sat_raw = Image.open(satellite_image_path).convert("RGB")
+    sat_main = sat_raw.resize((p1_w, 360), Image.Resampling.LANCZOS)
+    sdraw = ImageDraw.Draw(sat_main)
+    rois = [
+        ("U_101 Skyway", (260, 145, 420, 275), (250, 204, 21)),
+        ("H_MB Mission Bay", (415, 225, 565, 350), (56, 189, 248)),
+        ("U_280 Islais Creek", (365, 515, 520, 645), (248, 113, 113)),
+    ]
+    for lbl, (bx1, by1, bx2, by2), col in rois:
+        px1, py1 = int(bx1 / 1000 * p1_w), int(by1 / 1000 * 360)
+        px2, py2 = int(bx2 / 1000 * p1_w), int(by2 / 1000 * 360)
+        sdraw.rectangle((px1, py1, px2, py2), outline=col, width=3)
+        sdraw.rectangle((px1, max(0, py1 - 18), px1 + len(lbl) * 7 + 8, py1), fill=col)
+        sdraw.text((px1 + 4, max(0, py1 - 16)), lbl, fill=(15, 23, 42), font=small)
+
+    canvas.paste(sat_main, (x1, top_y + 32))
+    draw.rectangle((x1, top_y + 32, x1 + p1_w, top_y + 392), outline=(59, 130, 246), width=2)
+
+    # Two zoomed high-detail vlm-zoom crop insets below the satellite panel
+    inset_y = top_y + 404
+    inset_w = (p1_w - 12) // 2
+    inset_h = card_h - 404
+    sw, sh = sat_raw.size
+    for idx_i, (lbl, (bx1, by1, bx2, by2), col) in enumerate(rois[:2]):
+        crop = sat_raw.crop(
+            (int(bx1 / 1000 * sw), int(by1 / 1000 * sh), int(bx2 / 1000 * sw), int(by2 / 1000 * sh))
+        ).resize((inset_w, inset_h - 22), Image.Resampling.LANCZOS)
+        ix = x1 + idx_i * (inset_w + 12)
+        draw.rectangle((ix, inset_y, ix + inset_w, inset_y + 20), fill=(30, 41, 59))
+        draw.text((ix + 6, inset_y + 3), f"vlm-zoom 3.5x: {lbl}", fill=col, font=small)
+        canvas.paste(crop, (ix, inset_y + 20))
+        draw.rectangle((ix, inset_y, ix + inset_w, inset_y + inset_h), outline=col, width=2)
+
+    # Panels 2 & 3: Real San Francisco Digital Twin Baseline vs Optimal at peak divergence
+    n = len(comparison.baseline.metrics)
+    best_i = max(
+        range(n),
+        key=lambda i: (
+            round(
+                comparison.optimal.metrics[i].resilience_index
+                - comparison.baseline.metrics[i].resilience_index,
+                4,
+            ),
+            -abs(i - n // 2),
+        ),
+    )
+    bf, bm = comparison.baseline.frames[best_i], comparison.baseline.metrics[best_i]
+    of, om = comparison.optimal.frames[best_i], comparison.optimal.metrics[best_i]
+
+    map_h = 390
+    p2_img = _draw_city_panel(
+        city, bf, bm, hazard=comparison.hazard, actions=[], panel_w=p2_w, panel_h=map_h
+    )
+    p3_img = _draw_city_panel(
+        city,
+        of,
+        om,
+        hazard=comparison.hazard,
+        actions=comparison.selected_actions,
+        panel_w=p3_w,
+        panel_h=map_h,
+    )
+    canvas.paste(p2_img, (x2, top_y + 32))
+    canvas.paste(p3_img, (x3, top_y + 32))
+    draw.rectangle((x2, top_y + 32, x2 + p2_w, top_y + 32 + map_h), outline=(239, 68, 68), width=2)
+    draw.rectangle((x3, top_y + 32, x3 + p3_w, top_y + 32 + map_h), outline=(16, 185, 129), width=2)
+
+    # Diagnostic summary cards under Panels 2 & 3
+    box_y = top_y + 32 + map_h + 12
+    box_h = top_y + card_h - box_y
+    draw.rounded_rectangle(
+        (x2, box_y, x2 + p2_w, box_y + box_h), radius=8, fill=(15, 23, 42), outline=(51, 65, 85)
+    )
+    draw.text(
+        (x2 + 14, box_y + 12),
+        f"Baseline R(t={bf.hour:.0f}h) = {bm.resilience_index:.3f}  |  Blocked Links: {len(bm.blocked_edges)}",
+        fill=(254, 202, 202),
+        font=mono,
+    )
+    draw.text(
+        (x2 + 14, box_y + 40),
+        f"Isolated Residents : {bm.isolated_population:,}",
+        fill=(248, 113, 113),
+        font=small,
+    )
+    draw.text(
+        (x2 + 14, box_y + 62),
+        f"Isolated Wards     : {', '.join(bm.isolated_districts) or 'None'}",
+        fill=(203, 213, 225),
+        font=small,
+    )
+    draw.text(
+        (x2 + 14, box_y + 84),
+        f"Offline Substations: {', '.join(bm.offline_substations) or 'None'}",
+        fill=(203, 213, 225),
+        font=small,
+    )
+
+    draw.rounded_rectangle(
+        (x3, box_y, x3 + p3_w, box_y + box_h), radius=8, fill=(15, 23, 42), outline=(51, 65, 85)
+    )
+    draw.text(
+        (x3 + 14, box_y + 12),
+        f"Optimal R(t={of.hour:.0f}h) = {om.resilience_index:.3f}  |  Isolated: {om.isolated_population:,}",
+        fill=(167, 243, 208),
+        font=mono,
+    )
+    ay = box_y + 40
+    for idx_a, attr in enumerate(comparison.attributions[:4], start=1):
+        draw.text(
+            (x3 + 14, ay),
+            f"{idx_a}. {attr.action.display_name[:40]} (dR={attr.marginal_resilience_gain:+.3f})",
+            fill=(254, 240, 138),
+            font=small,
+        )
+        ay += 20
+
+    # Flow arrows between stages
+    for ax in (x1 + p1_w + 4, x2 + p2_w + 4):
+        ay_mid = top_y + 220
+        draw.polygon([(ax, ay_mid - 10), (ax + 18, ay_mid), (ax, ay_mid + 10)], fill=(250, 204, 21))
+
+    out = Path(output_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(out)
     return out

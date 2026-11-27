@@ -1,18 +1,19 @@
 # resilience-wm
 
-**Neuro-Symbolic Spatial World Model for Urban Resilience** — coupling 2D physical hazard simulation, 4-layer infrastructure cascading-failure reasoning, model-based counterfactual planning, and multimodal VLM disaster perception into a fast, zero-GPU Python package.
+**Neuro-Symbolic Spatial World Model for Urban Resilience (`v0.2.0`)** — coupling real-world city terrain & OSM infrastructure, mass-conserving **LISFLOOD-FP 2D shallow-water physics**, **HAZUS 4-state seismic fragility + Monte Carlo 90% CI / CVaR-10%**, counterfactual intervention planning, **Gymnasium RL (`verl` GRPO-ready)**, a **zero-dependency MCP Server**, and **real satellite imagery + `vlm-zoom` grounding** in pure Python on CPU.
 
 <p align="center">
   <a href="README_CN.md">中文文档</a> &bull;
-  <a href="#live-world-model-rollout">Live Rollout</a> &bull;
-  <a href="#architecture">Architecture</a> &bull;
-  <a href="#measured-benchmarks">Benchmarks</a> &bull;
-  <a href="#quick-start">Quick Start</a> &bull;
-  <a href="#multimodal-vlm--geojson-integration">VLM &amp; GeoJSON</a>
+  <a href="#end-to-end-real-satellite--world-model-closed-loop">Real Satellite Loop</a> &bull;
+  <a href="#real-san-francisco-digital-twin-osm--aws-30m-dem">Real San Francisco Twin</a> &bull;
+  <a href="#spatial-resilience-benchmark">Benchmark</a> &bull;
+  <a href="#mcp-server--rl-environment">MCP &amp; RL</a> &bull;
+  <a href="#quick-start">Quick Start</a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-13%20passed-10b981?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/version-0.2.0-8b5cf6?style=flat-square" alt="Version 0.2.0" />
+  <img src="https://img.shields.io/badge/tests-19%20passed-10b981?style=flat-square" alt="Tests" />
   <img src="https://img.shields.io/badge/ruff-0%20errors-3b82f6?style=flat-square" alt="Ruff" />
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=flat-square" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/license-Apache--2.0-f59e0b?style=flat-square" alt="License Apache-2.0" />
@@ -20,9 +21,79 @@
 
 ---
 
-## Live World-Model Rollout
+## End-to-End Real Satellite + World-Model Closed Loop
 
-> **6-Hour Extreme Cloudburst Flood (`340 mm / 6h`) over Riverfront Metropolis (`12.8 km × 19.2 km`, 620,000 residents)** — comparing an unmitigated **Baseline** (left) against the **World-Model Optimal Counterfactual Plan** (right) across `0h -> 6h`.
+> **Real San Francisco Eastern Bayfront Satellite Orthophoto** (`vlm-zoom` 3.5x multi-region inspection of US-101 Skyway, Mission Bay & Islais Creek) &rarr; **Spatial Grounding onto Real San Francisco OSM + AWS 30m DEM** &rarr; **LISFLOOD-FP 2D Shallow-Water Rollout & Counterfactual Optimal Plan** (**414,000 residents rescued**).
+
+<p align="center">
+  <img src="assets/sf_vlm_world_model_pipeline.png" alt="Real Satellite + vlm-zoom -> World-Model Closed Loop" width="100%" />
+</p>
+
+---
+
+## What's New in `v0.2.0` (Beyond Toy Simulation)
+
+1. **Real-World City Data Pipeline (`OSM + AWS 30m Terrarium DEM`)**:
+   - Bundled **San Francisco Real Digital Twin** (`build_real_sf_city()`): real 30m AWS Mapzen Terrarium elevation DEM (`0m` Pacific/Bay coastline up to `255m` Twin Peaks / Mt Davidson), verified OSM/PG&E/DPH infrastructure (`Zuckerberg SF General`, `UCSF Mission Bay`, `CPMC Van Ness`, `UCSF Parnassus`, `Embarcadero` & `Mission` substations, US-101 Skyway, I-280 Islais Creek), and 820,000 census residents.
+   - Live **`resilience-wm fetch-city --bbox south,west,north,east`** downloads real 30m DEM + OSM hospitals/substations for **any city on Earth**.
+2. **Physics-Grade Solvers + Stochastic Uncertainty Quantification**:
+   - **LISFLOOD-FP Local Inertial 2D Shallow-Water Equations** (Bates et al., 2010) with spatially distributed Manning roughness $n(r,c)$, CFL sub-stepping, Green-Ampt pervious infiltration, and verified machine-precision mass conservation (`rel_err = 7.95e-8`).
+   - **HAZUS 4-State Lognormal Seismic Fragility** (`Slight / Moderate / Extensive / Complete`) + continuous Vs30 alluvium/bedrock site amplification.
+   - **Monte Carlo Uncertainty Quantification (`evaluate_monte_carlo`)**: plots **90% confidence interval bands `[P05, P95]`** and computes **CVaR-10%** tail risk.
+3. **12-Scenario Spatial-Resilience Benchmark (`resilience-wm benchmark`)**:
+   - Quantitative comparison across Real San Francisco & Riverfront Metropolis (Flood + Earthquake), contrasting `No-Action`, `Graph Centrality`, `Local Hazard Greedy`, optional `Zero-Shot LLM (--llm-url)`, and `resilience-wm World Model` on resilience gain $\Delta R$, residents rescued, and **wasted/hallucinated action rate**.
+4. **Standard Agent & RL Ecosystem Interfaces**:
+   - **Zero-dependency JSON-RPC 2.0 MCP Server (`resilience-wm mcp`)**: plug directly into Claude Code, Cursor, or Antigravity (`list_cities`, `inspect_city_graph`, `simulate_disaster`, `optimize_response_plan`).
+   - **Gymnasium-compatible RL Environment (`ResilienceEnv`)** + drop-in **`verl` GRPO/RLOO reward verifier** ([verl_grpo_reward_hook.py](examples/verl_grpo_reward_hook.py)) with explicit invalid/duplicate hallucination penalties.
+
+---
+
+## Real San Francisco Digital Twin (OSM + AWS 30m DEM)
+
+### Extreme Cloudburst Flood (`340 mm / 6h`, LISFLOOD-FP + Monte Carlo N=16)
+
+- **Mean Resilience $R(t)$**: `0.72 -> 0.93` (**`+0.21`**) | **CVaR-10%**: `0.67 -> 0.90`
+- **Peak Isolated Residents**: `414,000 -> 74,000` (**340,000 SF residents rescued**)
+
+<p align="center">
+  <img src="assets/sf_real_flood_hero.png" alt="Real San Francisco Flood Resilience with Monte Carlo 90% CI" width="100%" />
+</p>
+
+### Near-Field Bayfront Earthquake (`Mw 6.8`, HAZUS 4-State + Monte Carlo N=16)
+
+- **Mean Resilience $R(t)$**: `0.457 -> 0.637` (**`+0.180`**) | **CVaR-10%**: `0.406 -> 0.575`
+- **Peak Isolated Residents**: `384,000 -> 228,000` (**156,000 SF residents rescued**)
+
+<p align="center">
+  <img src="assets/sf_real_earthquake_hero.png" alt="Real San Francisco Earthquake Resilience with Monte Carlo 90% CI" width="100%" />
+</p>
+
+---
+
+## Spatial-Resilience Benchmark
+
+Evaluated deterministically across **12 diverse multi-city scenarios** (Real San Francisco + Riverfront Metropolis &times; Flood & Earthquake &times; varied storm tracks & epicenters):
+
+| Strategy | Mean Resilience `R(t)` | Mean Gain `ΔR` | Mean Residents Rescued | Wasted / Hallucinated Action Rate | Avg Latency |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| `no_action` (Baseline) | `0.518` | `+0.000` | `0` | `0.0%` | `21 ms` |
+| `hazard_greedy` (Local Depth/PGA, No Graph) | `0.658` | `+0.140` | `95,333` | **`48.0%`** | `21 ms` |
+| `graph_centrality` (Pure Topology, No Physics) | `0.684` | `+0.166` | `153,167` | **`42.0%`** | `21 ms` |
+| **`world_model_planner` (`resilience-wm`)** | **`0.740`** | **`+0.222`** | **`223,500` (+134% vs greedy)** | **`0.0%`** | `1.1 s` |
+
+<p align="center">
+  <img src="assets/benchmark_comparison.png" alt="Spatial-Resilience Benchmark Chart" width="100%" />
+</p>
+
+Run with your own LLM endpoint to measure Zero-Shot LLM spatial hallucination directly:
+
+```bash
+resilience-wm benchmark --llm-url http://localhost:8000/v1 --model Qwen/Qwen3-VL-4B-Instruct --out-png bench.png
+```
+
+---
+
+## Animated World-Model Rollout (Riverfront Metropolis `0h -> 6h`)
 
 <p align="center">
   <img src="assets/flood_resilience_rollout.gif" alt="Urban Flood World-Model Rollout GIF" width="100%" />
@@ -30,168 +101,81 @@
 
 ---
 
-## Why `resilience-wm`?
+## MCP Server & RL Environment
 
-Standard LLMs and VLMs can describe a disaster photo (*"the underpass is flooded"*), but **cannot reliably compute spatiotemporal physics or cross-layer cascading failures** (*"if Riverside Substation `S1` trips at `t=2h`, Central Hospital `H1` drops to 45% triage capacity, Eastbank Medical `H2` floods out, and 128,000 residents in `R4`/`R5` lose 25-minute ambulance reachability — where should 2 mobile pumps, 1 barrier, and 1 generator be deployed?"*).
+### 1. Mount as a Zero-Dependency MCP Server (`Claude Code` / `Cursor` / `Antigravity`)
 
-`resilience-wm` solves this with a **Neuro-Symbolic Spatial World Model**:
-
-1. **Multimodal Perception Grounding**: Ingests normalized `[0, 1000]` disaster bounding boxes from any OpenAI-compatible VLM (`vLLM` + `Qwen3-VL`, or [`vlm-zoom`](https://github.com/ca33-zx/vlm-zoom) on 4K aerial orthophotos) and snaps them onto city substations, bridges, tunnels, and basins.
-2. **Dual-Hazard 2D Spatial Physics (`s_{t+1} = T_phys(s_t, a_t, ξ_t)`)**:
-   - **Extreme Urban Flood**: Mass-conserving vectorized 2D D8 diffusive shallow-water routing over raster DEM, urban imperviousness, and storm drainage, modeling mobile pump dewatering and protective flood barriers.
-   - **Near-Field Urban Earthquake**: GMPE ground-motion PGA attenuation + continuous Vs30 alluvium/bedrock site amplification + lognormal fragility curves + progressive road repair crew & temporary bridge recovery.
-3. **4-Layer Cascading Failure & Spatial Graph Reasoning**: Propagates hazard states across **Power Grid -> Hospitals & Shelters -> Road/Bridge Network -> Population Accessibility** via multi-source Dijkstra (15-min/25-min ambulance reachability, largest connected component, and the **Bruneau Resilience Triangle** $R(t)$).
-4. **Counterfactual World-Model Planning & Causal Attribution**: Runs simulator-in-the-loop beam search across dozens of forward rollouts under a resource budget, then runs **leave-one-out counterfactual ablations** on every selected intervention to quantify exact marginal resilience gain $\Delta R$ and residents rescued.
-5. **Publication-Ready Visuals & Offline Sandbox**: Exports synchronized side-by-side comparison PNGs, animated `0h -> 6h` rollout GIFs, and compact (`< 150 KB`) zero-CDN interactive HTML5 sandboxes with time scrubbers and layer toggles.
-
----
-
-## Architecture
-
-```mermaid
-flowchart LR
-    A["Aerial / Satellite Imagery<br/>(Qwen3-VL / vLLM / vlm-zoom)"] -->|"[x1,y1,x2,y2] detections"| B["Spatial Grounding<br/>(Snap to Nodes & Edges)"]
-    C["City Digital Twin<br/>(DEM Raster + GeoJSON Graph)"] --> D["2D Spatial World Model<br/>Flood D8 Routing / Seismic GMPE"]
-    B --> D
-    D -->|"WorldFrame s_t (0h..6h)"| E["4-Layer Cascading Evaluator<br/>Power -> Hospitals -> Roads -> Dijkstra"]
-    E -->|"R(t), Isolated Pop"| F["Counterfactual Beam Planner<br/>+ Leave-One-Out Attribution"]
-    F -->|"Candidate Actions a_t"| D
-    F --> G["Outputs: Causal Briefing,<br/>PNG / GIF / Interactive HTML"]
+```json
+{
+  "mcpServers": {
+    "resilience-wm": {
+      "command": "resilience-wm",
+      "args": ["mcp"]
+    }
+  }
+}
 ```
 
----
+Exposes 4 structured JSON tools: `list_cities`, `inspect_city_graph`, `simulate_disaster`, and `optimize_response_plan`.
 
-## Measured Benchmarks
+### 2. Train Sequential Dispatch Policies with `ResilienceEnv` & `verl` GRPO
 
-Evaluated deterministically on the built-in **Riverfront Metropolis** digital twin (`64 × 96` raster DEM @ 200 m/cell, 24 infrastructure nodes, 35 arterial/bridge/tunnel links, 620,000 residents) on CPU in **< 1.5 seconds per scenario**:
+```python
+from resilience_wm import ResilienceEnv
 
-| Scenario | Rollouts Evaluated | Mean Resilience `R(t)` | Worst-Hour `R(t)` | Post-Shock Isolated Residents | Optimal Counterfactual Plan |
-| --- | :---: | :---: | :---: | :---: | --- |
-| **Extreme Cloudburst Flood** (`340 mm / 6h`) | 71 | `0.706 -> 0.967` (**`+0.261`**) | `0.570 -> 0.953` (`t=3h`) | `128,000 -> 0` (**128,000 rescued**) | `Generator@S1`, `Barrier@H2`, `Pump@U1`, `Pump@B2W` |
-| **Near-Field Earthquake** (`Mw 6.8`, `10 km`) | 137 | `0.389 -> 0.776` (**`+0.387`**) | `0.389 -> 0.84` (`t=3h`) | `196,000 -> 130,000` (**66,000 rescued**; `62,000` by `t=3h`) | `Generator@S1`, `TempBridge@E_B1`, `Crew@E_E13`, `Crew@E_W15` |
+env = ResilienceEnv(city="sf", hazard="earthquake", randomize=True)
+obs, info = env.reset(seed=42)
+obs, reward, terminated, truncated, info = env.step(("mobile_generator", "S_MIS"))
+print(info["state_text"], f"reward={reward:+.4f}")
+```
 
-### Scenario 1: Extreme Cloudburst Flood (`t = 3h` Peak Divergence)
-
-<p align="center">
-  <img src="assets/flood_resilience_hero.png" alt="Flood Resilience Comparison Banner" width="100%" />
-</p>
-
-*Note on causal synergy*: Under the flood optimal plan, leave-one-out attribution highlights an authentic physical coupling — because `Pump@U1` and `Pump@B2W` jointly draw down the hydraulic gradient around `S1`, `Generator@S1` acts as synergistic redundancy (`dR=+0.000` individually while contributing to the combined `+0.261` resilience triangle gain and `128,000` residents rescued).
-
-### Scenario 2: Near-Field Urban Earthquake (`Mw 6.8`, `t = 3h` Recovery)
-
-<p align="center">
-  <img src="assets/earthquake_resilience_hero.png" alt="Earthquake Resilience Comparison Banner" width="100%" />
-</p>
+See [examples/verl_grpo_reward_hook.py](examples/verl_grpo_reward_hook.py) for a drop-in `verl` GRPO/RLOO verifiable physics reward hook (`compute_score`).
 
 ---
 
 ## Quick Start
 
-### Install
-
 ```bash
 git clone https://github.com/ca33-zx/resilience-wm.git
 cd resilience-wm
 pip install -e ".[dev]"
-```
 
-Pure Python with only `numpy`, `pillow`, and `httpx` — runs on macOS, Linux, and Windows CPU with zero CUDA/GDAL setup.
+# Generate all Real SF & Riverfront PNGs (with Monte Carlo 90% CI), GIF, Benchmark & HTML sandboxes
+resilience-wm demo --out-dir assets --mc-samples 16
 
-### CLI Usage
+# Run planning on Real San Francisco with Monte Carlo uncertainty quantification
+resilience-wm plan --city sf --hazard flood --mc-samples 20 --out-html sf_flood.html
 
-```bash
-# Generate both Flood & Earthquake PNG banners, animated GIF, and interactive HTML sandboxes
-resilience-wm demo --out-dir assets
+# Fetch ANY real city on Earth from OpenStreetMap + AWS 30m Terrarium DEM
+resilience-wm fetch-city --bbox 37.72,-122.46,37.80,-122.38 --name "San Francisco Core" --hazard earthquake
 
-# Run counterfactual planning on Flood or Earthquake and export JSON + interactive sandbox
-resilience-wm plan --hazard flood --out-png flood.png --out-gif flood.gif --out-html flood.html
-resilience-wm plan --hazard earthquake --json
-
-# Open the zero-CDN interactive sandbox directly in your browser:
-open assets/flood_sandbox.html
-```
-
-### Python API
-
-```python
-from resilience_wm import (
-    CounterfactualPlanner,
-    FloodForcing,
-    ResourceBudget,
-    build_riverfront_city,
-    synthesize_causal_briefing,
-)
-
-city = build_riverfront_city()
-planner = CounterfactualPlanner(
-    city,
-    hazard="flood",
-    flood_forcing=FloodForcing(total_rain_mm=340.0, duration_hours=6.0),
-)
-comparison = planner.plan(
-    budget=ResourceBudget(counts={"mobile_pump": 2, "mobile_generator": 1, "flood_barrier": 1}),
-    beam_width=3,
-)
-print(synthesize_causal_briefing(city, comparison))
+# Open the zero-CDN interactive sandbox directly in your browser
+open assets/sf_real_flood_sandbox.html
 ```
 
 ---
 
-## Multimodal VLM & GeoJSON Integration
-
-### 1. Live `vLLM` / `Qwen3-VL` Disaster Image Grounding
-
-Pass an OpenAI-compatible VLM endpoint (`vLLM`, `SGLang`, `Ollama`, or OpenRouter) + an aerial/satellite disaster image. Detections in `[0, 1000]` normalized coordinates are automatically grounded onto the nearest substation, bridge, road, or underpass before counterfactual rollouts:
-
-```python
-from resilience_wm import SpatialReasoningAgent, build_riverfront_city
-
-agent = SpatialReasoningAgent(
-    build_riverfront_city(),
-    base_url="http://localhost:8000/v1",
-    model="Qwen/Qwen3-VL-4B-Instruct",
-)
-comparison, briefing = agent.run_mission(
-    hazard="flood",
-    image_path="aerial_cloudburst.png",
-)
-print(briefing)
-```
-
-For ultra-high-resolution (`4K`–`100MP+`) satellite or drone orthophotos, pair `resilience-wm` with [`ca33-zx/vlm-zoom`](https://github.com/ca33-zx/vlm-zoom) to zoom into flooded sub-regions before grounding detections into the world model.
-
-### 2. Import Your Own City (`GeoJSON` + `.npy` DEM)
-
-```python
-from resilience_wm import CounterfactualPlanner, load_city_from_geojson
-
-city = load_city_from_geojson("my_city.geojson", dem_npy_path="my_dem.npy")
-comparison = CounterfactualPlanner(city, hazard="earthquake").plan()
-```
-
-Point features map to `UrbanNode` (`kind`: `residential` | `hospital` | `substation` | `shelter` | `underpass` | `hub`, plus `population` and `power_source`), and LineString features map to `UrbanEdge` (`u`, `v`, `kind`, `length_km`).
-
----
-
-## Project Layout
+## Architecture & Module Map
 
 ```text
 resilience-wm/
 ├── src/resilience_wm/
-│   ├── city.py        # UrbanTwin raster + graph digital twin & GeoJSON/DEM loader
-│   ├── physics.py     # 2D D8 overland flood routing & seismic GMPE fragility engine
-│   ├── resilience.py  # 4-layer cascading failure propagation & multi-source Dijkstra
-│   ├── planner.py     # Simulator-in-the-loop beam planner & leave-one-out attribution
-│   ├── agent.py       # VLM [0,1000] spatial grounding & deterministic causal briefings
-│   ├── viz.py         # GIS hillshade PNG banners, animated GIFs & offline HTML sandbox
-│   └── cli.py         # `resilience-wm plan | demo` command-line entrypoint
-├── examples/          # Flood counterfactual planning & VLM grounding runnable scripts
-├── tests/             # 13 pytest tests covering physics, cascading failures, VLM & CLI
-└── assets/            # Hero banners, animated rollout GIF & interactive HTML sandboxes
+│   ├── data/          # Bundled Real San Francisco OSM GeoJSON + 30m AWS Terrarium DEM (.npy)
+│   ├── osm.py         # `build_real_sf_city()`, `fetch_terrarium_dem()`, `fetch_city_from_osm()`
+│   ├── city.py        # UrbanTwin raster + coupled infrastructure graph & GeoJSON loader
+│   ├── physics.py     # LISFLOOD-FP 2D inertial shallow-water solver & HAZUS 4-state seismic model
+│   ├── resilience.py  # 4-layer cascading failure propagation, Dijkstra & Monte Carlo 90% CI / CVaR-10%
+│   ├── planner.py     # Simulator-in-the-loop counterfactual beam planner & leave-one-out attribution
+│   ├── env.py         # Gymnasium-compatible `ResilienceEnv` for RL / `verl` GRPO training
+│   ├── mcp_server.py  # Zero-dependency JSON-RPC 2.0 MCP stdio server (`resilience-wm mcp`)
+│   ├── benchmark.py   # 12-scenario Spatial-Resilience Benchmark + publication chart renderer
+│   ├── agent.py       # VLM [0,1000] spatial grounding (`Qwen3-VL` / `vlm-zoom`) & causal briefings
+│   ├── viz.py         # GIS hillshade banners, Monte Carlo CI charts, GIFs & offline HTML sandboxes
+│   └── cli.py         # `resilience-wm plan | demo | benchmark | fetch-city | mcp`
+├── examples/          # Flood planning, real SF satellite VLM loop & `verl` GRPO reward hook
+├── tests/             # 19 pytest tests (mass conservation, real SF, Monte Carlo, Env, MCP, Benchmark)
+└── assets/            # Real SF satellite ortho, hero banners, GIF, benchmark chart & HTML sandboxes
 ```
-
----
 
 ## Development & Verification
 

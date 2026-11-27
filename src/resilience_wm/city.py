@@ -65,6 +65,8 @@ class UrbanTwin:
     cell_size_m: float
     nodes: dict[str, UrbanNode] = field(default_factory=dict)
     edges: dict[str, UrbanEdge] = field(default_factory=dict)
+    manning_n: np.ndarray | None = None  # optional (H, W) Manning roughness coefficient
+    bbox: tuple[float, float, float, float] | None = None  # optional (south, west, north, east)
 
     @property
     def shape(self) -> tuple[int, int]:

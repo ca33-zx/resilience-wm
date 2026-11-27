@@ -104,10 +104,13 @@ def test_cli_plan_json_and_demo(tmp_path: Path, capsys) -> None:
     assert payload["resilience_gain"] > 0.0
 
     demo_dir = tmp_path / "demo_out"
-    rc_demo = cli_main(["demo", "--out-dir", str(demo_dir)])
+    rc_demo = cli_main(["demo", "--out-dir", str(demo_dir), "--mc-samples", "0"])
     assert rc_demo == 0
     assert (demo_dir / "flood_resilience_hero.png").exists()
     assert (demo_dir / "flood_resilience_rollout.gif").exists()
     assert (demo_dir / "flood_sandbox.html").exists()
     assert (demo_dir / "earthquake_resilience_hero.png").exists()
     assert (demo_dir / "earthquake_sandbox.html").exists()
+    assert (demo_dir / "sf_real_flood_hero.png").exists()
+    assert (demo_dir / "sf_real_earthquake_hero.png").exists()
+    assert (demo_dir / "benchmark_comparison.png").exists()

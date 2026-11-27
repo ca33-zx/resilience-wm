@@ -125,6 +125,12 @@ def synthesize_causal_briefing(
             f"(Rescued: {comparison.isolated_population_reduced:,})"
         ),
     ]
+    if comparison.baseline_mc is not None and comparison.optimal_mc is not None:
+        lines.append(
+            f"Monte Carlo CVaR-10% (N={comparison.optimal_mc.n_samples:<2d})    : "
+            f"{comparison.baseline_mc.cvar10_mean_r:.3f} (Baseline) -> "
+            f"{comparison.optimal_mc.cvar10_mean_r:.3f} (Optimal Plan)"
+        )
 
     if observations:
         lines.append("")
@@ -212,6 +218,7 @@ class SpatialReasoningAgent:
         budget: ResourceBudget | None = None,
         visual_detections: list[VisualDetection] | None = None,
         image_path: str | Path | None = None,
+        mc_samples: int = 0,
     ) -> tuple[PlanComparison, str]:
         """End-to-end Perception -> Spatial Grounding -> Counterfactual Planning -> Briefing."""
         dets = list(visual_detections or [])
@@ -219,7 +226,7 @@ class SpatialReasoningAgent:
             dets.extend(self.perceive_disaster_image(image_path))
         observations = ground_visual_detections_to_city(self.city, dets, hazard=hazard)
         planner = CounterfactualPlanner(self.city, hazard=hazard, observations=observations)
-        comparison = planner.plan(budget=budget)
+        comparison = planner.plan(budget=budget, mc_samples=mc_samples)
         briefing = synthesize_causal_briefing(self.city, comparison, observations=observations)
         return comparison, briefing
 

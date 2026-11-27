@@ -11,10 +11,22 @@ Evaluates every `WorldFrame` across four coupled urban layers:
 from __future__ import annotations
 
 import heapq
+import math
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from .city import UrbanTwin
-from .physics import HazardType, WorldFrame
+from .physics import (
+    EarthquakeForcing,
+    FloodForcing,
+    HazardType,
+    InterventionAction,
+    ObservedDamage,
+    WorldFrame,
+    simulate_earthquake_rollout,
+    simulate_flood_rollout,
+)
 
 
 @dataclass
@@ -289,3 +301,121 @@ def evaluate_rollout(
     """Evaluate spatial resilience metrics across every frame of a rollout."""
     metrics = [evaluate_frame(city, fr, hazard=hazard) for fr in frames]
     return RolloutEvaluation(hazard=hazard, frames=frames, metrics=metrics)
+
+
+@dataclass(frozen=True)
+class MonteCarloResult:
+    """Stochastic uncertainty quantification over N hazard realizations."""
+
+    hazard: HazardType
+    n_samples: int
+    hours: list[float]
+    mean_r: list[float]
+    p05_r: list[float]
+    p95_r: list[float]
+    cvar10_mean_r: float  # average mean_resilience of the worst 10% tail realizations
+    mean_peak_isolated: float
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "hazard": self.hazard,
+            "n_samples": self.n_samples,
+            "hours": self.hours,
+            "mean_r": [round(v, 4) for v in self.mean_r],
+            "p05_r": [round(v, 4) for v in self.p05_r],
+            "p95_r": [round(v, 4) for v in self.p95_r],
+            "cvar10_mean_r": round(self.cvar10_mean_r, 4),
+            "mean_peak_isolated": round(self.mean_peak_isolated, 1),
+        }
+
+
+def evaluate_monte_carlo(
+    city: UrbanTwin,
+    *,
+    hazard: HazardType,
+    actions: list[InterventionAction] | None = None,
+    observations: list[ObservedDamage] | None = None,
+    flood_forcing: FloodForcing | None = None,
+    earthquake_forcing: EarthquakeForcing | None = None,
+    n_samples: int = 20,
+    seed: int = 42,
+) -> MonteCarloResult:
+    """Run Monte Carlo uncertainty quantification (90% CI + CVaR-10% tail risk)."""
+    rng = np.random.default_rng(seed)
+    n = max(4, int(n_samples))
+    trajectories: list[list[float]] = []
+    mean_scores: list[float] = []
+    peak_isos: list[int] = []
+    hours: list[float] = []
+
+    if hazard == "flood":
+        base_f = flood_forcing or FloodForcing()
+        for _ in range(n):
+            # +/- 18% cloudburst intensity + +/- 4 cell storm-track uncertainty
+            scale = float(np.clip(rng.normal(1.0, 0.14), 0.65, 1.40))
+            base_c = base_f.storm_center
+            if base_c is not None:
+                c_jitter = (
+                    base_c[0] + float(rng.normal(0.0, 3.0)),
+                    base_c[1] + float(rng.normal(0.0, 3.0)),
+                )
+            else:
+                c_jitter = None
+            ff = FloodForcing(
+                total_rain_mm=base_f.total_rain_mm,
+                duration_hours=base_f.duration_hours,
+                peak_hour=base_f.peak_hour,
+                storm_center=c_jitter,
+                storm_radius_cells=base_f.storm_radius_cells,
+                dt_minutes=base_f.dt_minutes,
+                solver=base_f.solver,
+                infiltration_mm_hr=base_f.infiltration_mm_hr,
+            )
+            ev = evaluate_rollout(
+                city,
+                simulate_flood_rollout(
+                    city, forcing=ff, actions=actions, observations=observations, rain_scale=scale
+                ),
+                hazard="flood",
+            )
+            hours = [m.hour for m in ev.metrics]
+            trajectories.append([m.resilience_index for m in ev.metrics])
+            mean_scores.append(ev.mean_resilience)
+            peak_isos.append(ev.peak_isolated_population)
+    else:
+        base_e = earthquake_forcing or EarthquakeForcing()
+        ef = EarthquakeForcing(
+            magnitude_mw=base_e.magnitude_mw,
+            epicenter=base_e.epicenter,
+            depth_km=base_e.depth_km,
+            duration_hours=base_e.duration_hours,
+            sigma_ln_pga=max(base_e.sigma_ln_pga, 0.22),
+        )
+        for _ in range(n):
+            ev = evaluate_rollout(
+                city,
+                simulate_earthquake_rollout(
+                    city, forcing=ef, actions=actions, observations=observations, rng=rng
+                ),
+                hazard="earthquake",
+            )
+            hours = [m.hour for m in ev.metrics]
+            trajectories.append([m.resilience_index for m in ev.metrics])
+            mean_scores.append(ev.mean_resilience)
+            peak_isos.append(ev.peak_isolated_population)
+
+    mat = np.asarray(trajectories, dtype=np.float32)  # (N, T)
+    sorted_means = sorted(mean_scores)
+    tail_k = max(1, int(math.ceil(0.10 * len(sorted_means))))
+    cvar10 = sum(sorted_means[:tail_k]) / tail_k
+
+    return MonteCarloResult(
+        hazard=hazard,
+        n_samples=n,
+        hours=hours,
+        mean_r=mat.mean(axis=0).tolist(),
+        p05_r=np.percentile(mat, 5, axis=0).tolist(),
+        p95_r=np.percentile(mat, 95, axis=0).tolist(),
+        cvar10_mean_r=float(cvar10),
+        mean_peak_isolated=float(sum(peak_isos) / len(peak_isos)),
+    )

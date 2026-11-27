@@ -24,7 +24,12 @@ from .physics import (
     simulate_earthquake_rollout,
     simulate_flood_rollout,
 )
-from .resilience import RolloutEvaluation, evaluate_rollout
+from .resilience import (
+    MonteCarloResult,
+    RolloutEvaluation,
+    evaluate_monte_carlo,
+    evaluate_rollout,
+)
 
 
 @dataclass(frozen=True)
@@ -60,6 +65,8 @@ class PlanComparison:
     selected_actions: list[InterventionAction]
     attributions: list[ActionAttribution]
     rollouts_evaluated: int
+    baseline_mc: MonteCarloResult | None = None
+    optimal_mc: MonteCarloResult | None = None
 
     @property
     def resilience_gain(self) -> float:
@@ -92,6 +99,14 @@ class PlanComparison:
             ],
             "baseline": self.baseline.to_summary_dict(),
             "optimal": self.optimal.to_summary_dict(),
+            **(
+                {
+                    "baseline_monte_carlo": self.baseline_mc.to_dict(),
+                    "optimal_monte_carlo": self.optimal_mc.to_dict(),
+                }
+                if self.baseline_mc is not None and self.optimal_mc is not None
+                else {}
+            ),
         }
 
 
@@ -195,6 +210,8 @@ class CounterfactualPlanner:
         budget: ResourceBudget | None = None,
         *,
         beam_width: int = 3,
+        mc_samples: int = 0,
+        mc_seed: int = 42,
     ) -> PlanComparison:
         """Search for the highest-resilience spatial intervention portfolio within `budget`."""
         self._rollout_count = 0
@@ -278,6 +295,30 @@ class CounterfactualPlanner:
                 )
             )
 
+        base_mc: MonteCarloResult | None = None
+        opt_mc: MonteCarloResult | None = None
+        if mc_samples > 0:
+            base_mc = evaluate_monte_carlo(
+                self.city,
+                hazard=self.hazard,
+                actions=[],
+                observations=self.observations,
+                flood_forcing=self.flood_forcing,
+                earthquake_forcing=self.earthquake_forcing,
+                n_samples=mc_samples,
+                seed=mc_seed,
+            )
+            opt_mc = evaluate_monte_carlo(
+                self.city,
+                hazard=self.hazard,
+                actions=best_actions,
+                observations=self.observations,
+                flood_forcing=self.flood_forcing,
+                earthquake_forcing=self.earthquake_forcing,
+                n_samples=mc_samples,
+                seed=mc_seed,
+            )
+
         return PlanComparison(
             hazard=self.hazard,
             baseline=baseline,
@@ -285,4 +326,6 @@ class CounterfactualPlanner:
             selected_actions=best_actions,
             attributions=attributions,
             rollouts_evaluated=self._rollout_count,
+            baseline_mc=base_mc,
+            optimal_mc=opt_mc,
         )
