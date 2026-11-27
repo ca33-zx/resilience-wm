@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "resilience-wm"
+version = "0.1.0"
+description = "Neuro-symbolic Spatial World Model for Urban Resilience: 2D flood & seismic cascading-failure simulation, counterfactual intervention planning, multimodal VLM disaster grounding, animated rollouts, and an interactive HTML sandbox."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "ca33-zx", email = "ca33-zx@users.noreply.github.com" }]
+keywords = [
+    "world-model",
+    "urban-resilience",
+    "spatial-reasoning",
+    "multimodal",
+    "vlm",
+    "digital-twin",
+    "flood-simulation",
+    "earthquake",
+    "cascading-failure",
+    "counterfactual-planning",
+    "geospatial",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+dependencies = [
+    "httpx>=0.27.0",
+    "numpy>=1.24.0",
+    "pillow>=10.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.6.0",
+]
+
+[project.scripts]
+resilience-wm = "resilience_wm.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ca33-zx/resilience-wm"
+Repository = "https://github.com/ca33-zx/resilience-wm"
+Issues = "https://github.com/ca33-zx/resilience-wm/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/resilience_wm"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/resilience_wm/viz.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
