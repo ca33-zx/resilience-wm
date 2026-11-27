@@ -13,7 +13,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.2.0-8b5cf6?style=flat-square" alt="Version 0.2.0" />
-  <img src="https://img.shields.io/badge/tests-19%20passed-10b981?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-20%20passed-10b981?style=flat-square" alt="Tests" />
   <img src="https://img.shields.io/badge/ruff-0%20errors-3b82f6?style=flat-square" alt="Ruff" />
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=flat-square" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/license-Apache--2.0-f59e0b?style=flat-square" alt="License Apache-2.0" />
@@ -82,6 +82,24 @@
 <p align="center">
   <img src="assets/benchmark_comparison.png" alt="12 场景空间韧性 Benchmark 对比图" width="100%" />
 </p>
+
+---
+
+## 科学校验、历史灾例回溯验证与适用边界（Validation & Model Scope）
+
+随时运行 `resilience-wm validate --out-png assets/validation_hindcast.png` 复现全部数值校验与真实历史灾例回溯检验：
+
+| 验证层次 | 检验标准 / 历史真实灾例 | 实测结果 | 权威参考依据 |
+| --- | --- | :---: | --- |
+| **数值不变量校验** | 静水湖泊平衡测试（Lake-at-Rest）与瞬态溃波质量守恒 | **`0.00e+00 m`** / **`0.00e+00`**（**PASS**） | Bates et al. (2010) LISFLOOD-FP |
+| **历史洪涝回溯验证** | **2022.12.31 旧金山百年一遇大气河暴雨**（单日 `138.7 mm / 5.46 in`，零先验空间均匀降雨 + Priority-Flood DEM 预处理） | **ROC-AUC = `0.875`** · Top-K 召回率 `0.75` · 热点/高地积水比 **`5.79x`**（`0.239m` vs `0.041m`） | SFPUC 百年暴雨内涝风险图 & NWS 实测纪录 |
+| **历史地震回溯验证** | **1989.10.17 旧金山 Loma Prieta 地震**（`Mw 6.9`，软土填海 vs 基岩场地放大） | **ROC-AUC = `1.000`** · Top-K 召回率 `1.00` · 软土/基岩放大比 **`1.80x`**（`0.171g` vs `0.095g`） | USGS / CSMIP 强震台网与液化微区划观测 |
+
+<p align="center">
+  <img src="assets/validation_hindcast.png" alt="数值校验与旧金山历史真实灾例回溯验证图" width="100%" />
+</p>
+
+> **适用边界说明**：`resilience-wm` 定位于**中尺度（150–200 m 栅格）神经符号空间世界模型**，专注于秒级跨层应急瓶颈识别、反事实方案排序与多模态/RL 空间推理基准；内部集成 Priority-Flood DEM 水文预处理（Barnes et al., 2014）与 Monte Carlo 90% 置信带（`CVaR-10%`）量化不确定性。模型未包含逐管段有压管网水力计算（SWMM 级）、微观动态交通分配（SUMO 级）及单体建筑有限元结构分析。
 
 ---
 

@@ -38,6 +38,16 @@ from .resilience import (
     evaluate_monte_carlo,
     evaluate_rollout,
 )
+from .validation import (
+    HindcastResult,
+    NumericalVerification,
+    ValidationReport,
+    render_validation_figure,
+    run_validation_suite,
+    validate_sf_1989_loma_prieta_hindcast,
+    validate_sf_dec2022_flood_hindcast,
+    verify_numerical_invariants,
+)
 
 __version__ = "0.2.0"
 
@@ -53,8 +63,10 @@ __all__ = [
     "FloodSolver",
     "FrameMetrics",
     "HazardType",
+    "HindcastResult",
     "InterventionAction",
     "MonteCarloResult",
+    "NumericalVerification",
     "ObservedDamage",
     "PlanComparison",
     "ResilienceEnv",
@@ -66,6 +78,7 @@ __all__ = [
     "UrbanEdge",
     "UrbanNode",
     "UrbanTwin",
+    "ValidationReport",
     "VisualDetection",
     "WorldFrame",
     "__version__",
@@ -82,9 +95,14 @@ __all__ = [
     "handle_jsonrpc_request",
     "load_city_from_geojson",
     "render_benchmark_chart",
+    "render_validation_figure",
     "run_benchmark",
+    "run_validation_suite",
     "serve_stdio",
     "simulate_earthquake_rollout",
     "simulate_flood_rollout",
     "synthesize_causal_briefing",
+    "validate_sf_1989_loma_prieta_hindcast",
+    "validate_sf_dec2022_flood_hindcast",
+    "verify_numerical_invariants",
 ]

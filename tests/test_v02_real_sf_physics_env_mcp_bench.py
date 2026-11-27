@@ -25,6 +25,7 @@ from resilience_wm.physics import (
 )
 from resilience_wm.planner import CounterfactualPlanner
 from resilience_wm.resilience import evaluate_monte_carlo
+from resilience_wm.validation import render_validation_figure, run_validation_suite
 from resilience_wm.viz import render_multimodal_pipeline_banner
 
 
@@ -182,3 +183,21 @@ def test_spatial_resilience_benchmark_and_multimodal_banner(tmp_path: Path) -> N
     assert banner.exists()
     with Image.open(banner) as im:
         assert im.size == (1600, 680)
+
+
+def test_verification_and_historical_sf_hindcast_validation(tmp_path: Path) -> None:
+    report = run_validation_suite()
+    assert report.numerical.passed is True
+    assert report.numerical.lake_at_rest_max_err_m < 1e-5
+    assert report.numerical.mass_conservation_rel_err < 1e-5
+    # Dec 31, 2022 SF atmospheric river hindcast (uniform rainfall on real 30m DEM)
+    assert report.sf_flood_2022.roc_auc >= 0.80
+    assert report.sf_flood_2022.contrast_ratio >= 3.0
+    # Oct 17, 1989 Loma Prieta SF site-response hindcast
+    assert report.sf_loma_prieta_1989.roc_auc >= 0.90
+    assert report.sf_loma_prieta_1989.contrast_ratio >= 1.5
+
+    fig = render_validation_figure(report, tmp_path / "val.png")
+    assert fig.exists()
+    with Image.open(fig) as im:
+        assert im.size == (1480, 620)

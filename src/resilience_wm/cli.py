@@ -13,6 +13,7 @@ from .city import UrbanTwin, build_riverfront_city, load_city_from_geojson
 from .mcp_server import serve_stdio
 from .osm import build_real_sf_city, fetch_city_from_osm
 from .planner import CounterfactualPlanner, ResourceBudget
+from .validation import render_validation_figure, run_validation_suite
 from .viz import (
     render_hero_banner,
     render_interactive_sandbox_html,
@@ -157,6 +158,17 @@ def cmd_mcp(_args: argparse.Namespace) -> int:
     return serve_stdio()
 
 
+def cmd_validate(args: argparse.Namespace) -> int:
+    report = run_validation_suite()
+    if args.out_png:
+        render_validation_figure(report, args.out_png)
+    if args.json:
+        print(json.dumps(report.to_dict(), indent=2))
+    else:
+        print(report.format_text())
+    return 0 if report.numerical.passed else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="resilience-wm",
@@ -207,6 +219,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_mcp = sub.add_parser("mcp", help="Run the JSON-RPC 2.0 MCP stdio server for AI agents.")
     p_mcp.set_defaults(func=cmd_mcp)
+
+    p_val = sub.add_parser(
+        "validate", help="Run numerical verification & SF historical disaster hindcasts."
+    )
+    p_val.add_argument("--out-png", type=str, default=None)
+    p_val.add_argument("--json", action="store_true")
+    p_val.set_defaults(func=cmd_validate)
 
     return parser
 

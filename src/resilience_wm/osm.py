@@ -11,6 +11,7 @@ Supports:
 
 from __future__ import annotations
 
+import heapq
 import io
 import json
 import math
@@ -84,6 +85,43 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2.0 * r * math.asin(min(1.0, math.sqrt(a)))
 
 
+def _condition_upland_dem_pits(
+    dem: np.ndarray,
+    water_mask: np.ndarray,
+    *,
+    upland_threshold_m: float = 24.0,
+) -> np.ndarray:
+    """Priority-Flood hydrological DEM conditioning (Barnes et al., 2014).
+
+    Removes spurious closed single-cell sink artifacts on steep upland hillslopes
+    (`dem > upland_threshold_m`) caused by coarse DEM resampling, while preserving
+    authentic low-lying urban flood basins (`dem <= upland_threshold_m`).
+    """
+    h, w = dem.shape
+    filled = dem.copy()
+    visited = np.zeros((h, w), dtype=bool)
+    heap: list[tuple[float, int, int]] = []
+
+    for r in range(h):
+        for c in range(w):
+            if water_mask[r, c] or r in (0, h - 1) or c in (0, w - 1):
+                visited[r, c] = True
+                heapq.heappush(heap, (float(filled[r, c]), r, c))
+
+    while heap:
+        elev, r, c = heapq.heappop(heap)
+        for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < h and 0 <= nc < w and not visited[nr, nc]:
+                visited[nr, nc] = True
+                ne = float(filled[nr, nc])
+                if ne < elev and ne > upland_threshold_m:
+                    ne = elev + 0.05
+                    filled[nr, nc] = ne
+                heapq.heappush(heap, (ne, nr, nc))
+    return filled
+
+
 def build_real_sf_city() -> UrbanTwin:
     """Load the bundled real San Francisco Peninsula digital twin (OSM + AWS 30m DEM).
 
@@ -107,16 +145,17 @@ def build_real_sf_city() -> UrbanTwin:
 
     # Real Pacific Ocean & San Francisco Bay water mask (elevation <= 0.5m)
     water_mask = raw_dem <= 0.5
-    # Clip seabed to sea-level 0.0m for overland shallow-water routing
+    # Clip seabed to sea-level 0.0m and apply Priority-Flood upland pit conditioning
     dem = np.where(water_mask, 0.0, np.maximum(0.5, raw_dem)).astype(np.float32)
+    dem = _condition_upland_dem_pits(dem, water_mask, upland_threshold_m=24.0)
 
     # Urban imperviousness & drainage derived from real SF elevation (dense flat Bay-fill vs hills)
-    imperviousness = np.clip(0.92 - 0.0022 * np.maximum(0.0, dem - 12.0), 0.52, 0.95).astype(
+    imperviousness = np.clip(0.92 - 0.0028 * np.maximum(0.0, dem - 12.0), 0.45, 0.95).astype(
         np.float32
     )
     imperviousness[water_mask] = 1.0
 
-    drainage = np.where(dem < 12.0, 17.0, 28.0).astype(np.float32)
+    drainage = np.where(dem < 24.0, 17.0, 32.0).astype(np.float32)
     drainage[water_mask] = 120.0  # ocean/bay acts as infinite hydraulic sink
 
     # Manning roughness n(r, c): water=0.028, flat dense urban=0.032, hilly residential=0.055
