@@ -31,7 +31,7 @@
 
 ---
 
-## What's New in `v0.2.0` (Beyond Toy Simulation)
+## Core Capabilities (`v0.2.0`)
 
 1. **Real-World City Data Pipeline (`OSM + AWS 30m Terrarium DEM`)**:
    - Bundled **San Francisco Real Digital Twin** (`build_real_sf_city()`): real 30m AWS Mapzen Terrarium elevation DEM (`0m` Pacific/Bay coastline up to `255m` Twin Peaks / Mt Davidson), verified OSM/PG&E/DPH infrastructure (`Zuckerberg SF General`, `UCSF Mission Bay`, `CPMC Van Ness`, `UCSF Parnassus`, `Embarcadero` & `Mission` substations, US-101 Skyway, I-280 Islais Creek), and 820,000 census residents.
